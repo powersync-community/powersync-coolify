@@ -1,0 +1,89 @@
+Vagrant.configure("2") do |config|
+    config.vm.box = "bento/ubuntu-24.04"
+    config.vm.box_version = "202502.21.0"
+    config.vm.hostname = "coolify"
+  
+    # Coolify web UI
+    config.vm.network "forwarded_port", guest: 8000, host: 8000
+    # Common app ports — add more as needed
+    config.vm.network "forwarded_port", guest: 80, host: 8080
+    config.vm.network "forwarded_port", guest: 443, host: 8443
+
+    # Extra range for custom services
+  (6000..6060).each do |port|
+    config.vm.network "forwarded_port", guest: port, host: port
+  end
+  
+    # Private network so you can hit the VM directly
+    config.vm.network "private_network", ip: "192.168.56.10"
+
+    config.vm.synced_folder "./services", "/home/vagrant/services"
+  
+    config.vm.provider "virtualbox" do |vb|
+      vb.memory = 4096
+      vb.cpus = 2
+      vb.name = "coolify-dev"
+      vb.gui = false
+      vb.customize ['setextradata', :id, 'GUI/ScaleFactor', '2']
+      vb.customize ['modifyvm', :id, '--clipboard-mode', 'bidirectional']
+    end
+  
+    # Install Docker + Coolify
+    config.vm.provision "shell", inline: <<-SHELL
+      # set -e
+  
+      dpkg --configure -a || true
+      apt-get update
+      apt-get install -y curl wget git
+      apt-get install -y curl wget git jq
+
+      # Coolify needs passwordless root SSH to localhost
+      if [ ! -f /root/.ssh/id_ed25519 ]; then
+        mkdir -p /root/.ssh
+        ssh-keygen -t ed25519 -f /root/.ssh/id_ed25519 -N ""
+        cat /root/.ssh/id_ed25519.pub >> /root/.ssh/authorized_keys
+        chmod 600 /root/.ssh/authorized_keys
+        ssh-keyscan -H localhost >> /root/.ssh/known_hosts 2>/dev/null
+      fi
+
+      # Install Coolify (this installs Docker too)
+      curl -fsSL https://cdn.coollabs.io/coolify/install.sh | bash
+    SHELL
+
+    # Inject PowerSync service template (runs every provision)
+    config.vm.provision "shell", run: "always", inline: <<-SHELL
+
+      echo "Waiting for Coolify container to start..."
+      for i in $(seq 1 30); do
+        COOLIFY_CONTAINER=$(docker ps --filter "name=^coolify$" -q | head -1)
+        if [ -n "$COOLIFY_CONTAINER" ]; then
+          break
+        fi
+        echo "  Attempt $i/30 — not ready yet, waiting 10s..."
+        sleep 10
+      done
+
+      if [ -z "$COOLIFY_CONTAINER" ]; then
+        echo "Coolify container never started. Check 'docker ps -a' inside the VM."
+        exit 1
+      fi
+
+      echo "Found Coolify container: $COOLIFY_CONTAINER"
+
+      # Inject the compose template
+      docker cp /home/vagrant/services/powersync.yaml \
+        "$COOLIFY_CONTAINER":/var/www/html/templates/compose/powersync.yaml
+      echo "Injected compose template"
+
+      # Inject the logo
+      docker cp /home/vagrant/services/powersync.svg \
+        "$COOLIFY_CONTAINER":/var/www/html/public/svgs/powersync.svg
+      echo "Injected SVG logo"
+
+      # Regenerate service-templates.json from the compose files
+      docker exec "$COOLIFY_CONTAINER" php /var/www/html/artisan generate:services
+      echo "Regenerated service templates"
+
+      echo "Done — PowerSync should now appear in one-click services"
+    SHELL
+end
