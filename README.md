@@ -152,9 +152,9 @@ PowerSync requires logical replication. Follow the [PowerSync database setup gui
 CREATE PUBLICATION powersync FOR ALL TABLES;
 ```
 
-### 6. Update sync rules
+### 6. Update sync config
 
-The template ships with placeholder sync rules referencing `mytable`. Replace them with your actual tables:
+The template ships with placeholder sync streams referencing `mytable`. Replace them with your actual tables:
 
 1. In Coolify, go to the PowerSync service → **Storages** → **Files**.
 2. Edit **sync-config.yaml** with your sync stream definitions.
@@ -183,7 +183,7 @@ See the [sync streams documentation](https://docs.powersync.com/sync/streams/ove
 Both files are editable in the Coolify UI under **Storages → Files**:
 
 - **powersync.yaml** — main service configuration (ports, connections, auth).
-- **sync-config.yaml** — sync rules defining which data is synced to each client.
+- **sync-config.yaml** — sync streams defining which data is synced to each client.
 
 ### Cross-service networking
 

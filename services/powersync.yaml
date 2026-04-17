@@ -48,8 +48,8 @@ services:
             uri: !env PS_SYNC_BUCKET_URI
             sslmode: disable
 
-          # Sync rules loaded from file on startup.
-          # Remove this section to manage sync rules via the API or CI/CD instead.
+          # Sync streams loaded from file on startup.
+          # Remove this section to manage sync streams via the API or CI/CD instead.
           sync_config:
             path: /app/sync-config.yaml
 
@@ -64,7 +64,7 @@ services:
           telemetry:
             disable_telemetry_sharing: true
             prometheus_port: !env PS_TELEMETRY_PORT
-      # Sync rules — edit this in the Coolify UI under Storages > Files.
+      # Sync streams — edit this in the Coolify UI under Storages > Files.
       # Replace the example queries below with your own tables.
       # Docs: https://docs.powersync.com/sync/streams/overview
       - type: bind
