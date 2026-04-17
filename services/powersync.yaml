@@ -1,6 +1,6 @@
 # documentation: https://docs.powersync.com?utm_source=coolify.io
-# slogan: Sync engine for keeping backend databases in sync with in-app SQLite. 
-# tags: sync, local-first, offline-first, postgres, realtime, sqlite, mobile, replication
+# slogan: Sync engine for local-first apps with Postgres, MySQL, MongoDB, or SQL Server.
+# tags: sync, sync-engine,local-first, offline-first, postgres, realtime, sqlite, mobile, replication
 # logo: svgs/powersync.svg
 # port: 6060
 
